@@ -12,17 +12,19 @@ var deck = new Array();
 var hand = new Array();
 var burn = new Array();
 
-// Lokup tables to turn numerical values into ranks and suits
+// Lookup tables to turn numerical values into ranks and suits
 var ranks = new Array('.','.','2','3','4','5','6','7','8','9','10','J','Q','K','A');
 var suits = new Array('&spades;','&clubs;','&diams;','&hearts;');
 
-// Variables for evaluations
+// Variables for state and evaluations
+var state = 'deal';
 var sorted_hand  = new Array();
 var hand_by_rank = new Array();
 var hand_by_run  = new Array();
 var hand_by_suit = new Array();
 var hands = new Array();
-var best_hand = -1;
+var hold  = new Array(0,0,0,0,0);
+var best_hand = 0;
 
 // Odds: all hands and their respective payouts
 var odds = new Array();
@@ -35,11 +37,29 @@ odds.push({ name: 'Nothing',
             }
           });
 
+// Nothing - high card: 0
+odds.push({ name: 'Nothing - high card',
+            payout: 0,
+            made: function () {
+                return (hand_by_rank.lastIndexOf(1) >= 11);
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].rank >= 11) ? 1 : 0;
+                }
+            }
+          });
+
 // Nothing - low pair: 0
 odds.push({ name: 'Nothing - low pair',
             payout: 0,
             made: function () {
                 return (hand_by_rank.indexOf(2) > -1 && hand_by_rank.indexOf(2) <= 10);
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(2)) ? 1 : 0;
+                }
             }
           });
 
@@ -48,6 +68,11 @@ odds.push({ name: 'Nothing - 4 legs of straight with outside draws',
             payout: 0,
             made: function () {
                 return (hand_by_run.indexOf(4) > -1)
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand_by_run[hand[h].rank] == 4) ? 1 : 0;
+                }
             }
           });
 
@@ -56,6 +81,11 @@ odds.push({ name: 'Nothing - 4 legs of flush',
             payout: 0,
             made: function () {
                 return (hand_by_suit.max() == 4);
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].suit == hand_by_suit.indexOf(4)) ? 1 : 0;
+                }
             }
           });
 
@@ -64,6 +94,11 @@ odds.push({ name: 'Jacks or Better',
             payout: 1,
             made: function () {
                 return (hand_by_rank.indexOf(2) >= 11);
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(2)) ? 1 : 0;
+                }
             }
           });
 
@@ -72,6 +107,11 @@ odds.push({ name: 'Two Pair',
             payout: 2,
             made: function () {
                 return (hand_by_rank.indexOf(2) > -1 && hand_by_rank.indexOf(2) != hand_by_rank.lastIndexOf(2));
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(2)) ? 1 : 0;
+                }
             }
           });
 
@@ -80,6 +120,11 @@ odds.push({ name: 'Three of a Kind',
             payout: 3,
             made: function () {
                 return (hand_by_rank.indexOf(3) > -1);
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(3)) ? 1 : 0;
+                }
             }
           });
 
@@ -90,6 +135,9 @@ odds.push({ name: 'Straight',
                 var hasNormal = ((hand_by_rank.lastIndexOf(1) - hand_by_rank.indexOf(1)) == 4 && hand_by_rank.max() == 1);
                 var hasWheel  = (hand_by_rank[2] == 1 && hand_by_rank[3] == 1 && hand_by_rank[4] == 1 && hand_by_rank[5] == 1 && hand_by_rank[14] == 1);
                 return (hasNormal || hasWheel);
+            },
+            hold: function () {
+                hold = new Array(1,1,1,1,1);
             }
           });
 
@@ -98,6 +146,9 @@ odds.push({ name: 'Flush',
             payout: 6,
             made: function () {
                 return (hand_by_suit.max() == 5);
+            },
+            hold: function () {
+                hold = new Array(1,1,1,1,1);
             }
           });
 
@@ -106,6 +157,9 @@ odds.push({ name: 'Full House',
             payout: 8,
             made: function () {
                 return (hand_by_rank.indexOf(2) > -1 && hand_by_rank.indexOf(3) > -1);
+            },
+            hold: function () {
+                hold = new Array(1,1,1,1,1);
             }
           });
 
@@ -114,6 +168,11 @@ odds.push({ name: 'Four 5s thru Ks',
             payout: 25,
             made: function () {
                 return (hand_by_rank.indexOf(4) >= 5 && hand_by_rank.indexOf(4) <= 13);
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(4)) ? 1 : 0;
+                }
             }
           });
 
@@ -122,6 +181,11 @@ odds.push({ name: 'Four 2s, 3s, 4s',
             payout: 40,
             made: function () {
                 return (hand_by_rank.indexOf(4) >= 2 && hand_by_rank.indexOf(4) <= 4);
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(4)) ? 1 : 0;
+                }
             }
           });
 
@@ -130,6 +194,11 @@ odds.push({ name: 'Four Aces',
             payout: 80,
             made: function () {
                 return (hand_by_rank.indexOf(4) == 14);
+            },
+            hold: function () {
+                for (var h = 0; h < hand.length; h++){
+                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(4)) ? 1 : 0;
+                }
             }
           });
 
@@ -142,6 +211,9 @@ odds.push({ name: 'Straight Flush',
                 var hasWheelStraight  = (hand_by_rank[2] == 1 && hand_by_rank[3] == 1 && hand_by_rank[4] == 1 && hand_by_rank[5] == 1 && hand_by_rank[14] == 1);
                 var hasFlush    = (hand_by_suit.max() == 5);
                 return ((hasNormalStraight || hasWheelStraight) && hasFlush);
+            },
+            hold: function () {
+                hold = new Array(1,1,1,1,1);
             }
           });
 
@@ -152,6 +224,9 @@ odds.push({ name: 'Royal Flush',
                 var hasStraight = ((hand_by_rank.lastIndexOf(1) - hand_by_rank.indexOf(1)) == 4 && hand_by_rank.max() == 1);
                 var hasFlush    = (hand_by_suit.max() == 5);
                 return (hasStraight && hasFlush && (hand_by_rank.lastIndexOf(1) == 14));
+            },
+            hold: function () {
+                hold = new Array(1,1,1,1,1);
             }
           });
 
@@ -193,13 +268,13 @@ function resetEvaluations(){
 
 function deal(){
     resetHand();
+
+    hand.push({ rank: 4, suit: 1 });
+    hand.push({ rank: 12, suit: 3 });
+    hand.push({ rank: 10, suit: 3 });
+    hand.push({ rank: 11, suit: 3 });
+    hand.push({ rank: 5, suit: 3 });
 /*
-    hand.push({ rank: 4, suit: 0 });
-    hand.push({ rank: 3, suit: 0 });
-    hand.push({ rank: 2, suit: 3 });
-    hand.push({ rank: 11, suit: 2 });
-    hand.push({ rank: 5, suit: 0 });
-*/
     // Fill the hand. If the deck runs empty shuffle the discard and continue.
     for (var h = 0; h < 5; h++){
         if (!deck.length){
@@ -209,6 +284,7 @@ function deal(){
         }
         hand.push(deck.pop());
     }
+*/
 }
 
 function displayCard(card){
@@ -221,7 +297,7 @@ function displayCard(card){
 function evaluateHand(){
     resetEvaluations();
     // First sort the hand by rank ascending
-    sorted_hand = hand;
+    sorted_hand = hand.slice(0);
     sorted_hand.sort(function(a, b) { return a.rank > b.rank; });
     // Walk sorted array to populate hand_by_rank and hand_by_suit lookup arrays
     for (var h = 0; h < hand.length; h++){
@@ -238,6 +314,9 @@ function evaluateHand(){
             run_length = 0;
         }
         hand_by_run[j] = run_length;
+        for (var k = 1; k < run_length; k++){
+            hand_by_run[j-k] = run_length;
+        }
     }
     // Walk through the odds levels to find which hands we have and which one is the best
     for (var o = 1; o < odds.length; o++){

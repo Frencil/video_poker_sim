@@ -15,14 +15,16 @@ buildDeck();
 deck = shuffle(deck);
 
 // Deal and evaluate a thousand hands
-for (var hh = 0; hh < 1000; hh++){
+for (var hh = 0; hh < 1; hh++){
   deal();
   for (var i = 0; i < hand.length; i++){
     document.write(displayCard(hand[i]) + ' ');
   }
   evaluateHand();
+  odds[best_hand].hold();
   document.write(odds[best_hand].name);
   document.write('<br><br>');
+  console.log(hold);
 }
 
 </script>
