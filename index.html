@@ -15,16 +15,34 @@ buildDeck();
 deck = shuffle(deck);
 
 // Deal and evaluate a thousand hands
-for (var hh = 0; hh < 1; hh++){
+for (var hh = 0; hh < 1000; hh++){
+
+  // Deal and evaluate
   deal();
   for (var i = 0; i < hand.length; i++){
     document.write(displayCard(hand[i]) + ' ');
   }
   evaluateHand();
+  document.write(odds[best_hand].name);
+
+  // Hold...
   odds[best_hand].hold();
+  document.write(' ...hold: [ ');
+  for (var i = 0; i < hold.length; i++){
+    if (hold[i]) document.write(displayCard(hand[i]) + ' ');
+  }
+  document.write(']');
+
+  // Hold, discard, redraw, re-evaluate
+  redraw();
+  document.write(' Final: ');
+  for (var i = 0; i < hand.length; i++){
+    document.write(displayCard(hand[i]) + ' ');
+  }
+  evaluateHand();
   document.write(odds[best_hand].name);
   document.write('<br><br>');
-  console.log(hold);
+
 }
 
 </script>

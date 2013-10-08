@@ -34,6 +34,9 @@ odds.push({ name: 'Nothing',
             payout: 0,
             made: function () {
                 return true;
+            },
+            hold: function () {
+                return;
             }
           });
 
@@ -264,27 +267,42 @@ function resetEvaluations(){
     hands = new Array();
     hands[0]  = 0;
     best_hand = 0;
+    hold = new Array(0,0,0,0,0);
+}
+
+function drawOne(){
+    var card = deck.pop();
+    if (!deck.length){
+        deck = burn.slice(0);
+        burn = new Array();
+        shuffle(deck);
+    }
+    return card;
 }
 
 function deal(){
     resetHand();
-
+/*
     hand.push({ rank: 4, suit: 1 });
     hand.push({ rank: 12, suit: 3 });
     hand.push({ rank: 10, suit: 3 });
     hand.push({ rank: 11, suit: 3 });
     hand.push({ rank: 5, suit: 3 });
-/*
+*/
     // Fill the hand. If the deck runs empty shuffle the discard and continue.
     for (var h = 0; h < 5; h++){
-        if (!deck.length){
-            deck = burn;
-            burn = new Array();
-            shuffle(deck);
-        }
-        hand.push(deck.pop());
+        hand.push(drawOne());
     }
-*/
+
+}
+
+function redraw(){
+    for (var h = 0; h < hand.length; h++){
+        if (!hold[h]){
+            var card = hand.splice(h,1,drawOne());
+            burn.push(card[0]);
+        }
+    }
 }
 
 function displayCard(card){
