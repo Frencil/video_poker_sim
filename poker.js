@@ -19,6 +19,7 @@ var suits = new Array('&spades;','&clubs;','&diams;','&hearts;');
 // Variables for evaluations
 var sorted_hand  = new Array();
 var hand_by_rank = new Array();
+var hand_by_run  = new Array();
 var hand_by_suit = new Array();
 var hands = new Array();
 var best_hand = -1;
@@ -26,11 +27,35 @@ var best_hand = -1;
 // Odds: all hands and their respective payouts
 var odds = new Array();
 
-// Nothing (less than Jacks or Better): 0
+// Nothing: 0
 odds.push({ name: 'Nothing',
             payout: 0,
             made: function () {
                 return true;
+            }
+          });
+
+// Nothing - low pair: 0
+odds.push({ name: 'Nothing - low pair',
+            payout: 0,
+            made: function () {
+                return (hand_by_rank.indexOf(2) > -1 && hand_by_rank.indexOf(2) <= 10);
+            }
+          });
+
+// Nothing - 4 legs of straight with outside draws: 0
+odds.push({ name: 'Nothing - 4 legs of straight with outside draws',
+            payout: 0,
+            made: function () {
+                return (hand_by_run.indexOf(4) > -1)
+            }
+          });
+
+// Nothing - 4 legs of flush: 0
+odds.push({ name: 'Nothing - 4 legs of flush',
+            payout: 0,
+            made: function () {
+                return (hand_by_suit.max() == 4);
             }
           });
 
@@ -159,6 +184,7 @@ function resetHand(){
 function resetEvaluations(){
     sorted_hand  = new Array();
     hand_by_rank = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+    hand_by_run  = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
     hand_by_suit = new Array(0,0,0,0);
     hands = new Array();
     hands[0]  = 0;
@@ -167,13 +193,13 @@ function resetEvaluations(){
 
 function deal(){
     resetHand();
-    /*
-    hand.push({ rank: 2, suit: 0 });
-    hand.push({ rank: 3, suit: 0 });
+/*
     hand.push({ rank: 4, suit: 0 });
+    hand.push({ rank: 3, suit: 0 });
+    hand.push({ rank: 2, suit: 3 });
+    hand.push({ rank: 11, suit: 2 });
     hand.push({ rank: 5, suit: 0 });
-    hand.push({ rank: 14, suit: 0 });
-    */
+*/
     // Fill the hand. If the deck runs empty shuffle the discard and continue.
     for (var h = 0; h < 5; h++){
         if (!deck.length){
@@ -197,10 +223,21 @@ function evaluateHand(){
     // First sort the hand by rank ascending
     sorted_hand = hand;
     sorted_hand.sort(function(a, b) { return a.rank > b.rank; });
-    // Then walk sorted array to populate by_rank and by_suit lookup arrays
+    // Walk sorted array to populate hand_by_rank and hand_by_suit lookup arrays
     for (var h = 0; h < hand.length; h++){
         hand_by_rank[hand[h].rank]++;
         hand_by_suit[hand[h].suit]++;
+        hand_by_run[hand[h].rank]++;
+    }
+    // Walk hand_by_rank to populate hand_by_run lookup array
+    var run_length = 0;
+    for (var j = 0; j < hand_by_rank.length; j++){
+        if (hand_by_run[j] > 0){
+            run_length++;
+        } else {
+            run_length = 0;
+        }
+        hand_by_run[j] = run_length;
     }
     // Walk through the odds levels to find which hands we have and which one is the best
     for (var o = 1; o < odds.length; o++){
