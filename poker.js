@@ -66,8 +66,8 @@ odds.push({ name: 'Nothing - low pair',
             }
           });
 
-// Nothing - 4 legs of straight with outside draws: 0
-odds.push({ name: 'Nothing - 4 legs of straight with outside draws',
+// Nothing - 4 grouped straight legs: 0
+odds.push({ name: 'Nothing - 4 grouped straight legs',
             payout: 0,
             made: function () {
                 return (hand_by_run.indexOf(4) > -1)
@@ -113,7 +113,7 @@ odds.push({ name: 'Two Pair',
             },
             hold: function () {
                 for (var h = 0; h < hand.length; h++){
-                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(2)) ? 1 : 0;
+                    hold[h] = (hand[h].rank == hand_by_rank.indexOf(2) || hand[h].rank == hand_by_rank.lastIndexOf(2)) ? 1 : 0;
                 }
             }
           });
@@ -346,3 +346,4 @@ function evaluateHand(){
         }
     }
 }
+

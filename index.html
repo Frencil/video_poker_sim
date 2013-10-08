@@ -9,43 +9,93 @@
 <body>
 <h1>Video Poker Sim</h1>
 
+<div id="results" style="font-size: 20px; font-weight: bold;"></div>
+
 <pre>
+<table border="0" cellpadding="3">
+  <tr style="background-color: #CCCCCC; font-weight: bold;">
+    <th>Dealt hand</th>
+    <th>Initial eval</th>
+    <th>Held</th>
+    <th>Redrawn hand</th>
+    <th>Final eval</th>
+    <th>Payout</th>
+    <th>Bet</th>
+    <th>Bankroll</th>
+  </tr>
 <script>
 buildDeck();
 deck = shuffle(deck);
 
+// Variables for beting and bankroll
+var bet = 1;
+var bankroll = 100;
+var got_paid = false;
+
 // Deal and evaluate a thousand hands
-for (var hh = 0; hh < 1000; hh++){
+for (var hh = 0; hh < 10000; hh++){
+
+  // Set bet
+  bet = (got_paid ? Math.min(5,bankroll) : 1);
+
+  document.write('<tr>');
 
   // Deal and evaluate
   deal();
+  document.write('<td>');
   for (var i = 0; i < hand.length; i++){
     document.write(displayCard(hand[i]) + ' ');
   }
-  evaluateHand();
-  document.write(odds[best_hand].name);
+  document.write('</td>');
 
-  // Hold...
+  // Initial Evaluation
+  evaluateHand();
+  document.write('<td>' + odds[best_hand].name + '</td>');
+
+  // Hold
   odds[best_hand].hold();
-  document.write(' ...hold: [ ');
+  document.write('<td>');
   for (var i = 0; i < hold.length; i++){
     if (hold[i]) document.write(displayCard(hand[i]) + ' ');
   }
-  document.write(']');
+  document.write('</td>');
 
-  // Hold, discard, redraw, re-evaluate
+  // Redraw
   redraw();
-  document.write(' Final: ');
+  document.write('<td>');
   for (var i = 0; i < hand.length; i++){
     document.write(displayCard(hand[i]) + ' ');
   }
+  document.write('</td>');
+
+  // Final Evaluation
   evaluateHand();
-  document.write(odds[best_hand].name);
-  document.write('<br><br>');
+  document.write('<td>' + odds[best_hand].name + '</td>');
+
+  // Payout
+  document.write('<td>' + odds[best_hand].payout + '</td>');
+
+  // Bet
+  document.write('<td>' + bet + '</td>');
+
+  // Bankroll
+  bankroll -= bet;
+  bankroll += bet * odds[best_hand].payout;
+  document.write('<td>' + bankroll + '</td>');
+  got_paid = (!got_paid && (odds[best_hand].payout >= 2));
+
+  document.write('</tr>');
+
+  // Quit when broke or hit a big hand (double-digit payout)
+  if (bankroll <= 0 || odds[best_hand].payout >= 10){
+    document.getElementById("results").innerHTML = "Hands played: " + (hh+1) + "<br>Final Bankroll: " + bankroll;
+    break;
+  }
 
 }
 
 </script>
+</table>
 </pre>
 
 </body>
