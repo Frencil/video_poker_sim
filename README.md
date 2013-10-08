@@ -12,7 +12,14 @@ The strategy goes like this:
 
 In practice this sort of works, so I wanted to simulate thousands of hands to brute force if it *actually* works and how well.
 
+CURRENT STATUS:
+
+Loading the index page seeds the bankroll with 100 credits. It then runs 10,000 hands but will quit when bankrupt (obviously) or when a double-digit payout hand hits (per the strategy). It's also currently tuned to max bet (flat 5x bet) only on hands immediately after hands that payout 2 or more, and will always revert back to a single bet after one max bet regardless of hand.
+
+One can now reload the index a bunch of times to see a scenario play out in full. Final bankroll and hands played are reported at the top. Multiple runs show plenty of bankruptcies but a very favorable amount of winning scenarios.
+
 TODO:
 
- * Model the draw portion of draw poker
- * Model a bankroll and betting
+ * Automatically run multiple sessions in sucsession.
+ * Log and plot multiple sessions to analyze statistical probability of outcome.
+ * Tune for variations on the strategy and analyze results. Dial in an optimum strategy.
