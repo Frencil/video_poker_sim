@@ -305,13 +305,13 @@ function drawOne(){
 
 function deal(){
     resetHand();
-/*
+    /* Use this approach to force a given hand on a deal (e.g. or testing hand detection)
     hand.push({ rank: 4, suit: 1 });
     hand.push({ rank: 12, suit: 3 });
     hand.push({ rank: 10, suit: 3 });
     hand.push({ rank: 11, suit: 3 });
     hand.push({ rank: 5, suit: 3 });
-*/
+    */
     // Fill the hand. If the deck runs empty shuffle the discard and continue.
     for (var h = 0; h < 5; h++){
         hand.push(drawOne());
