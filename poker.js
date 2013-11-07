@@ -7,6 +7,26 @@ Array.prototype.min = function() {
   return Math.min.apply(null, this);
 };
 
+// Augment Math object to have median and mean functions
+Math.median = function(array) {
+  for (var i = array.length-1; i >= 0; i--) {
+    if (array[i] !== +array[i]) array[i] = Number.NEGATIVE_INFINITY;
+  }
+  var numA = function(a, b){ return (a-b); };
+  array.sort(numA);
+  while (array.length > 1 && !isFinite(array[0])) array.shift();
+  return array[Math.floor(array.length/2)];
+}
+
+Math.mean = function(array) {
+  if (!array.length) return 0;
+  var sum = 0;
+  for (var i = 0; i < array.length; i++) {
+    sum += array[i];
+  }
+  return sum / array.length;
+}
+
 // Models of phsyical card stacks
 var deck = new Array();
 var hand = new Array();
@@ -235,6 +255,9 @@ odds.push({ name: 'Royal Flush',
 
 
 function buildDeck() {
+    deck = new Array();
+    hand = new Array();
+    burn = new Array();
     for (var s = 0; s <= 3; s++){
         for (var v = 2; v <= 14; v++){
             var c = { rank: v, suit: s }

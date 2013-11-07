@@ -9,94 +9,165 @@
 <body>
 <h1>Video Poker Sim</h1>
 
-<div id="results" style="font-size: 20px; font-weight: bold;"></div>
+<div id="initializer" style="visibility: visible;">
+  Run <input id="session_count" value="1" size="5"> session(s) <button onClick="document.location='index.html?run='+document.getElementById('session_count').value;">Go</button>
+</div>
 
-<pre>
-<table border="0" cellpadding="3">
-  <tr style="background-color: #CCCCCC; font-weight: bold;">
-    <th>Dealt hand</th>
-    <th>Initial eval</th>
-    <th>Held</th>
-    <th>Redrawn hand</th>
-    <th>Final eval</th>
-    <th>Payout</th>
-    <th>Bet</th>
-    <th>Bankroll</th>
-  </tr>
+<div id="aggregate_results" style="visibility: hidden;">
+  <textarea rows="10" cols="100" id="aggregate_results_csv">session,hands_played,final_bankroll</textarea><br><br>
+</div>
+
+<div id="session_output" style="font-size: 20px; font-weight: bold; visibility: hidden;"></div>
+
+<div id="session_hands" style="visibility: hidden;"></div>
+
 <script>
-buildDeck();
-deck = shuffle(deck);
 
-// Variables for beting and bankroll
-var bet = 1;
-var bankroll = 100;
-var got_paid = false;
+// Simple method for pulling get var out of URL
+function getUrlVars() {
+	var vars = {};
+	var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+		vars[key] = value;
+	});
+	return vars;
+}
 
-// Deal and evaluate a ten thousand hands or until a bankrupt/cashout scenario
-for (var hh = 0; hh < 10000; hh++){
+var initial_bankroll = 500;
 
-  // Set bet
-  bet = (got_paid ? Math.min(5,bankroll) : 1);
+// Check for a run count
+var run = parseInt(getUrlVars()["run"]);
+var render = false;
 
-  document.write('<tr>');
+// Run a specified number of sessions, aggregate results
+if (run > 0){
 
-  // Deal and evaluate
-  deal();
-  document.write('<td>');
-  for (var i = 0; i < hand.length; i++){
-    document.write(displayCard(hand[i]) + ' ');
+  var all_hands_played = new Array();
+  var all_final_bankrolls = new Array();
+  var wins = 0;
+  var losses = 0;
+
+  document.getElementById("initializer").style.visibility = "hidden";
+  document.getElementById("aggregate_results").style.visibility = "visible";
+  document.getElementById("session_output").style.visibility = "visible";
+  if (render){
+    document.getElementById("session_hands").style.visibility = "visible";
   }
-  document.write('</td>');
 
-  // Initial Evaluation
-  evaluateHand();
-  document.write('<td>' + odds[best_hand].name + '</td>');
+  for (var r = 0; r < run; r++){
 
-  // Hold
-  odds[best_hand].hold();
-  document.write('<td>');
-  for (var i = 0; i < hold.length; i++){
-    if (hold[i]) document.write(displayCard(hand[i]) + ' ');
+    if (render){
+      document.getElementById("session_hands").innerHTML = "<pre><table border=\"0\" cellpadding=\"3\"><tr style=\"background-color: #CCCCCC; font-weight: bold;\"><th>Dealt hand</th><th>Initial eval</th><th>Held</th><th>Redrawn hand</th><th>Final eval</th><th>Payout</th><th>Bet</th><th>Bankroll</th></tr>\n";
+    }
+
+    buildDeck();
+    deck = shuffle(deck);
+
+    // Variables for beting and bankroll
+    var bet = 1;
+    var bankroll = initial_bankroll;
+    var got_paid = false;
+
+    // Deal and evaluate a ten thousand hands or until a bankrupt/cashout scenario
+    for (var hh = 0; hh < 10000; hh++){
+
+      var render_buffer = '';
+
+      // Set bet
+      bet = (got_paid ? Math.min(5,bankroll) : 1);
+
+      render_buffer += '<tr>';
+
+      // Deal and evaluate
+      deal();
+      render_buffer += '<td>';
+      for (var i = 0; i < hand.length; i++){
+        render_buffer += displayCard(hand[i]) + ' ';
+      }
+      render_buffer += '</td>';
+
+      // Initial Evaluation
+      evaluateHand();
+      render_buffer += '<td>' + odds[best_hand].name + '</td>';
+
+      // Hold
+      odds[best_hand].hold();
+      render_buffer += '<td>';
+      for (var i = 0; i < hold.length; i++){
+        if (hold[i]) render_buffer += displayCard(hand[i]) + ' ';
+      }
+      render_buffer += '</td>';
+
+      // Redraw
+      redraw();
+      render_buffer += '<td>';
+      for (var i = 0; i < hand.length; i++){
+        render_buffer += displayCard(hand[i]) + ' ';
+      }
+      render_buffer += '</td>';
+
+      // Final Evaluation
+      evaluateHand();
+      render_buffer += '<td>' + odds[best_hand].name + '</td>';
+
+      // Payout
+      render_buffer += '<td>' + odds[best_hand].payout + '</td>';
+
+      // Bet
+      render_buffer += '<td>' + bet + '</td>';
+
+      // Bankroll
+      bankroll -= bet;
+      bankroll += bet * odds[best_hand].payout;
+      render_buffer += '<td>' + bankroll + '</td>';
+      got_paid = (!got_paid && (odds[best_hand].payout >= 2));
+
+      render_buffer += '</tr>';
+
+      if (render){
+        document.getElementById("session_hands").innerHTML += render_buffer;
+      }
+
+      // Quit when broke or hit a big hand (double-digit payout)
+      if (bankroll <= 0 || odds[best_hand].payout >= 10){
+        break;
+      }
+
+    }
+
+    // Session over; do some post-session stuff
+    if (render){
+      document.getElementById("session_hands").innerHTML += "</table></pre>\n";
+    }
+    document.getElementById("session_output").innerHTML = "Last session...<br>Hands played: " + (hh+1) + "<br>Final Bankroll: " + bankroll + "<br>";
+    document.getElementById("aggregate_results_csv").value += "\n" + r + "," + (hh+1) + "," + bankroll;
+
+    all_hands_played.push(hh+1);
+    all_final_bankrolls.push(bankroll);
+
+    if (bankroll > initial_bankroll){
+      wins++;
+    } else {
+      losses++;
+    }
+
   }
-  document.write('</td>');
 
-  // Redraw
-  redraw();
-  document.write('<td>');
-  for (var i = 0; i < hand.length; i++){
-    document.write(displayCard(hand[i]) + ' ');
-  }
-  document.write('</td>');
-
-  // Final Evaluation
-  evaluateHand();
-  document.write('<td>' + odds[best_hand].name + '</td>');
-
-  // Payout
-  document.write('<td>' + odds[best_hand].payout + '</td>');
-
-  // Bet
-  document.write('<td>' + bet + '</td>');
-
-  // Bankroll
-  bankroll -= bet;
-  bankroll += bet * odds[best_hand].payout;
-  document.write('<td>' + bankroll + '</td>');
-  got_paid = (!got_paid && (odds[best_hand].payout >= 2));
-
-  document.write('</tr>');
-
-  // Quit when broke or hit a big hand (double-digit payout)
-  if (bankroll <= 0 || odds[best_hand].payout >= 10){
-    document.getElementById("results").innerHTML = "Hands played: " + (hh+1) + "<br>Final Bankroll: " + bankroll;
-    break;
-  }
+  // Runs complete, spit out aggregate data
+  var median_bankroll = Math.median(all_final_bankrolls);
+  var mean_bankroll = Math.mean(all_final_bankrolls);
+  var median_multiplier = Math.round((median_bankroll/initial_bankroll)*100)/100;
+  var mean_multiplier = Math.round((mean_bankroll/initial_bankroll)*100)/100;
+  document.getElementById("session_output").innerHTML += "<h3>"
+    + "Initial bankroll: " + initial_bankroll + "<br>"
+    + "Median hands played: " + Math.median(all_hands_played) + "; Mean: " + Math.mean(all_hands_played) + "<br>"
+    + "Median final bankroll: " + median_bankroll + " (" + median_multiplier + "x); Mean: " + mean_bankroll + " (" + mean_multiplier + "x)<br>"
+    + "Won: " + (Math.round(1000000*(wins/run))/10000) + "%<br>"
+    + "Lost: " + (Math.round(1000000*(losses/run))/10000) + "%<br>"
+    + "</h3>";
 
 }
 
 </script>
-</table>
-</pre>
 
 </body>
 </html>
