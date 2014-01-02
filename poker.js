@@ -1,3 +1,13 @@
+/*************************************************************************
+
+  VIDEO POKER SIM
+  ===============
+
+  This file contains the core JavaScript for basic five card draw poker.
+  
+
+*************************************************************************/
+
 // Augment the built-in Array object to use Math.max and Math.min
 Array.prototype.max = function() {
   return Math.max.apply(null, this);
@@ -46,7 +56,20 @@ var hands = new Array();
 var hold  = new Array(0,0,0,0,0);
 var best_hand = 0;
 
-// Odds: all hands and their respective payouts
+/******************************************************************************
+
+  Odds: An array of objects representing all types of hands.
+        Each hand has a name, a payout value (in credits), and two methods:
+
+        * made() - given the current hand, can we make this type of hand?
+        * hold() - hold the cards necessary to make this type of hand
+
+  Note that ALL types of hands must be represented for a complete model of the
+  game, including all types of incomplete hands (like four legs of a flush),
+  and nothing entirely, so that all possible five card hands match one of the
+  objects in the odds array.
+
+******************************************************************************/
 var odds = new Array();
 
 // Nothing: 0
@@ -253,7 +276,7 @@ odds.push({ name: 'Royal Flush',
             }
           });
 
-
+// Reset all stacks (deck, hand, and burn) and fill the deck with 52 cards
 function buildDeck() {
     deck = new Array();
     hand = new Array();
@@ -266,14 +289,15 @@ function buildDeck() {
     }
 }
 
+// Shuffle the deck
 function shuffle(o){
     for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
     return o;
 };
 
+// Flush evaluations, and if there are any cards in the hand then move them to the burn
 function resetHand(){
     resetEvaluations();
-    // Burn whatever's in the hand
     if (hand.length){
         var len = hand.length;
         for (var h = 0; h < len; h++){
@@ -282,6 +306,7 @@ function resetHand(){
     }
 }
 
+// Initialize all variables used in evaluating what's in the hand
 function resetEvaluations(){
     sorted_hand  = new Array();
     hand_by_rank = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
@@ -293,6 +318,8 @@ function resetEvaluations(){
     hold = new Array(0,0,0,0,0);
 }
 
+// Draw one card into the hand from the deck.
+// If the deck is empty, shuffle the burn and make it the new deck.
 function drawOne(){
     var card = deck.pop();
     if (!deck.length){
@@ -303,6 +330,7 @@ function drawOne(){
     return card;
 }
 
+// Fill the hand with five drawn cards
 function deal(){
     resetHand();
     /* Use this approach to force a given hand on a deal (e.g. or testing hand detection)
@@ -319,7 +347,8 @@ function deal(){
 
 }
 
-function redraw(){
+// Burn any cards in the hand not marked to be held and replace them with new cards from the deck
+function draw(){
     for (var h = 0; h < hand.length; h++){
         if (!hold[h]){
             var card = hand.splice(h,1,drawOne());
@@ -328,6 +357,7 @@ function redraw(){
     }
 }
 
+// Render a card by rank, suit, and color
 function displayCard(card){
     return '<font color="' + (card.suit < 2 ? 'black' : 'red') + '"><b>'
            + ranks[card.rank]
@@ -335,6 +365,7 @@ function displayCard(card){
            + '</b></font>';
 }
 
+// This function attempts to determine the best hand
 function evaluateHand(){
     resetEvaluations();
     // First sort the hand by rank ascending

@@ -5,7 +5,7 @@
 <title>Poker</title>
 <script src="poker.js"></script>
 <script>
-// Simple method for pulling get var out of URL
+// Simple function for pulling get var out of URL
 function getUrlVars() {
 	var vars = {};
 	var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
@@ -13,8 +13,10 @@ function getUrlVars() {
 	});
 	return vars;
 }
+// Use the above function to pull specific variables out of the URL
 var session_count    = parseInt(getUrlVars()["session_count"]);
 var initial_bankroll = parseInt(getUrlVars()["initial_bankroll"]);
+var cashout_bankroll = parseInt(getUrlVars()["cashout_bankroll"]);
 </script>
 </head>
 
@@ -23,7 +25,9 @@ var initial_bankroll = parseInt(getUrlVars()["initial_bankroll"]);
 
 <div id="initializer">
   <form method="GET">
-  Run <input id="session_count" name="session_count" value="1" size="3"> session(s) with an initial bankroll of <input id="initial_bankroll" name="initial_bankroll" value="100" size="4"> <input type="submit" value="Go">
+  Run <input id="session_count" name="session_count" value="1" size="3"> session(s) with an initial bankroll of <input id="initial_bankroll" name="initial_bankroll" value="100" size="4"><br />
+  Cash out when hitting four of a kind or better <b>or</b> hitting a bankroll of <input id="cashout_bankroll" name="cashout_bankroll" value="125" size="4"><br />
+  <input type="submit" style="font-size: 20px;" value="Go"><br />
   </form>
 </div>
 
@@ -38,10 +42,12 @@ var initial_bankroll = parseInt(getUrlVars()["initial_bankroll"]);
 // Repopulate form fields
 if (session_count > 0){ document.getElementById("session_count").value = session_count; }
 if (initial_bankroll > 0){ document.getElementById("initial_bankroll").value = initial_bankroll; }
+if (cashout_bankroll > 0 && cashout_bankroll > initial_bankroll){ document.getElementById("cashout_bankroll").value = cashout_bankroll; }
 
+// If var render is true then render the full detail of the final session (all cards in all hands)
 var render = true;
 
-// Run a specified number of sessions, aggregate results
+// Run the specified number of sessions and aggregate results
 if (session_count > 0){
 
   var Results = {};
@@ -62,31 +68,35 @@ if (session_count > 0){
     var output_hands = render && r == (session_count-1);
 
     if (output_hands){
-      document.write("<h2>Final Session Hand Breakdown</h2><pre><table border=\"0\" cellpadding=\"3\"><tr style=\"background-color: #CCCCCC; font-weight: bold;\"><th>Dealt hand</th><th>Initial eval</th><th>Held</th><th>Redrawn hand</th><th>Final eval</th><th>Payout</th><th>Bet</th><th>Bankroll</th></tr>\n");
+      document.write("<h2>Final Session Hand Breakdown:</h2><pre><table border=\"0\" cellpadding=\"3\"><tr style=\"background-color: #CCCCCC; font-weight: bold;\"><th>Dealt hand</th><th>Initial eval</th><th>Held</th><th>Drawn hand</th><th>Final eval</th><th>Payout</th><th>Bet</th><th>Bankroll</th></tr>\n");
     }
 
     buildDeck();
     deck = shuffle(deck);
 
-    // Variables for beting and bankroll
+    // Variables for betting and bankroll
     var bet = 1;
     var bankroll = initial_bankroll;
     var got_paid = false;
 
-    // Deal and evaluate a ten thousand hands or until a bankrupt/cashout scenario
+    // Deal and evaluate a ten thousand hands or until a bankrupt/cashout scenario.
+    // The hand limit of ten thousand is arbitrary, well above a typical number of hands
+    // needed to finish a session, and only there so this can never loop infitely.
     for (var hh = 0; hh < 10000; hh++){
 
-      // Set bet
+      // Set the number of credits to bet on the hand
       bet = (got_paid ? Math.min(5,bankroll) : 1);
 
-      // If we're displaying the hand to the browser begin buffering
+      // If we're displaying the hand to the browser then begin buffering the output
       if (output_hands){
         var render_buffer = '';
         render_buffer += '<tr>';
       }
 
-      // Deal and evaluate
+      // Deal!
       deal();
+
+      // Render the initial hand
       if (output_hands){
         render_buffer += '<td>';
         for (var i = 0; i < hand.length; i++){
@@ -95,14 +105,18 @@ if (session_count > 0){
         render_buffer += '</td>';
       }
 
-      // Initial Evaluation
+      // Evaluate the initial hand
       evaluateHand();
+
+      // Render the best hand's name
       if (output_hands){
         render_buffer += '<td>' + odds[best_hand].name + '</td>';
       }
 
-      // Hold
+      // Hold the best hand
       odds[best_hand].hold();
+
+      // Render the held cards
       if (output_hands){
         render_buffer += '<td>';
         for (var i = 0; i < hold.length; i++){
@@ -111,8 +125,10 @@ if (session_count > 0){
         render_buffer += '</td>';
       }
 
-      // Redraw
-      redraw();
+      // Draw
+      draw();
+
+      // Render the final hand
       if (output_hands){
         render_buffer += '<td>';
         for (var i = 0; i < hand.length; i++){
@@ -121,23 +137,25 @@ if (session_count > 0){
         render_buffer += '</td>';
       }
 
-      // Final Evaluation
+      // Evaluate the final hand
       evaluateHand();
+
+      // Print the best hand's name
       if (output_hands){
         render_buffer += '<td>' + odds[best_hand].name + '</td>';
       }
 
-      // Payout
+      // Print the payout
       if (output_hands){
         render_buffer += '<td>' + odds[best_hand].payout + '</td>';
       }
 
-      // Bet
+      // Print the bet
       if (output_hands){
         render_buffer += '<td>' + bet + '</td>';
       }
 
-      // Bankroll
+      // Adjust bankroll based on payout
       bankroll -= bet;
       bankroll += bet * odds[best_hand].payout;
       if (output_hands){
@@ -145,13 +163,20 @@ if (session_count > 0){
       }
       got_paid = (!got_paid && (odds[best_hand].payout >= 2));
 
+      // Render the buffer
       if (output_hands){
         render_buffer += '</tr>';
         document.write(render_buffer);
       }
 
-      // Quit when broke or hit a big hand (double-digit payout)
-      if (bankroll <= 0 || odds[best_hand].payout >= 10){
+      // Quit when:
+      //  * bankrupt
+      //  * hit a big hand (double-digit payout)
+      //  * meeting or exceeding the cashout bankroll
+      if (    bankroll <= 0
+           || odds[best_hand].payout >= 10
+           || bankroll >= cashout_bankroll
+          ){
         break;
       }
 
@@ -162,9 +187,9 @@ if (session_count > 0){
       document.write("</table></pre><br>\nHands played: " + (hh+1) + "<br>Final Bankroll: " + bankroll + "<br>");
     }
 
+    // Gather some results
     Results.all_hands_played.push(hh+1);
     Results.all_final_bankrolls.push(bankroll);
-
     if (bankroll > initial_bankroll){
       Results.wins++;
     } else {
@@ -185,9 +210,8 @@ if (session_count > 0){
   Results.median_multiplier = Math.round((Results.median_bankroll/initial_bankroll)*100)/100;
   Results.mean_multiplier = Math.round((Results.mean_bankroll/initial_bankroll)*100)/100;
   document.getElementById("final_output").innerHTML += "<h3>"
-    + "Initial bankroll: " + initial_bankroll + "<br>"
-    + "All hands played:: median: " + Math.median(Results.all_hands_played) + "; mean: " + Math.mean(Results.all_hands_played) + "<br>"
-    + "All final bankrolls:: median: " + Results.median_bankroll + " (" + Results.median_multiplier + "x); mean: " + Results.mean_bankroll + " (" + Results.mean_multiplier + "x)<br>"
+    + "Hands played per session... median: " + Math.median(Results.all_hands_played) + "; mean: " + Math.mean(Results.all_hands_played) + "<br>"
+    + "Final bankrolls per session... median: " + Results.median_bankroll + " (" + Results.median_multiplier + "x); mean: " + Results.mean_bankroll + " (" + Results.mean_multiplier + "x)<br>"
     + "Sessions Won: " + (Math.round(1000000*(Results.wins/session_count))/10000) + "%<br>"
     + "Sessions Lost: " + (Math.round(1000000*(Results.losses/session_count))/10000) + "% <small><i>includes break-even</i></small><br>"
     + "Final Net Bankroll: " + Results.net_bankroll + "<br>";
