@@ -38,22 +38,22 @@ Math.mean = function(array) {
 }
 
 // Models of phsyical card stacks
-var deck = new Array();
-var hand = new Array();
-var burn = new Array();
+var deck = [];
+var hand = [];
+var burn = [];
 
 // Lookup tables to turn numerical values into ranks and suits
-var ranks = new Array('.','.','2','3','4','5','6','7','8','9','10','J','Q','K','A');
-var suits = new Array('&spades;','&clubs;','&diams;','&hearts;');
+var ranks = [ '.', '.', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A' ];
+var suits = [ '&spades;', '&clubs;', '&diams;', '&hearts;' ];
 
 // Variables for state and evaluations
 var state = 'deal';
-var sorted_hand  = new Array();
-var hand_by_rank = new Array();
-var hand_by_run  = new Array();
-var hand_by_suit = new Array();
-var hands = new Array();
-var hold  = new Array(0,0,0,0,0);
+var sorted_hand  = [];
+var hand_by_rank = [];
+var hand_by_run  = [];
+var hand_by_suit = [];
+var hands = [];
+var hold  = [ 0, 0, 0, 0, 0 ];
 var best_hand = 0;
 
 /******************************************************************************
@@ -70,7 +70,7 @@ var best_hand = 0;
   objects in the odds array.
 
 ******************************************************************************/
-var odds = new Array();
+var odds = [];
 
 // Nothing: 0
 odds.push({ name: 'Nothing',
@@ -183,7 +183,7 @@ odds.push({ name: 'Straight',
                 return (hasNormal || hasWheel);
             },
             hold: function () {
-                hold = new Array(1,1,1,1,1);
+                hold = [ 1, 1, 1, 1, 1 ];
             }
           });
 
@@ -194,7 +194,7 @@ odds.push({ name: 'Flush',
                 return (hand_by_suit.max() == 5);
             },
             hold: function () {
-                hold = new Array(1,1,1,1,1);
+                hold = [ 1, 1, 1, 1, 1 ];
             }
           });
 
@@ -205,7 +205,7 @@ odds.push({ name: 'Full House',
                 return (hand_by_rank.indexOf(2) > -1 && hand_by_rank.indexOf(3) > -1);
             },
             hold: function () {
-                hold = new Array(1,1,1,1,1);
+                hold = [ 1, 1, 1, 1, 1 ];
             }
           });
 
@@ -259,7 +259,7 @@ odds.push({ name: 'Straight Flush',
                 return ((hasNormalStraight || hasWheelStraight) && hasFlush);
             },
             hold: function () {
-                hold = new Array(1,1,1,1,1);
+                hold = [ 1, 1, 1, 1, 1 ];
             }
           });
 
@@ -272,15 +272,15 @@ odds.push({ name: 'Royal Flush',
                 return (hasStraight && hasFlush && (hand_by_rank.lastIndexOf(1) == 14));
             },
             hold: function () {
-                hold = new Array(1,1,1,1,1);
+                hold = [ 1, 1, 1, 1, 1 ];
             }
           });
 
 // Reset all stacks (deck, hand, and burn) and fill the deck with 52 cards
 function buildDeck() {
-    deck = new Array();
-    hand = new Array();
-    burn = new Array();
+    deck = [];
+    hand = [];
+    burn = [];
     for (var s = 0; s <= 3; s++){
         for (var v = 2; v <= 14; v++){
             var c = { rank: v, suit: s }
@@ -308,14 +308,14 @@ function resetHand(){
 
 // Initialize all variables used in evaluating what's in the hand
 function resetEvaluations(){
-    sorted_hand  = new Array();
-    hand_by_rank = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-    hand_by_run  = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-    hand_by_suit = new Array(0,0,0,0);
-    hands = new Array();
+    sorted_hand  = [];
+    hand_by_rank = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+    hand_by_run  = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+    hand_by_suit = [ 0, 0, 0, 0 ];
+    hands = [];
     hands[0]  = 0;
     best_hand = 0;
-    hold = new Array(0,0,0,0,0);
+    hold = [ 0, 0, 0, 0, 0 ];
 }
 
 // Draw one card into the hand from the deck.
@@ -324,7 +324,7 @@ function drawOne(){
     var card = deck.pop();
     if (!deck.length){
         deck = burn.slice(0);
-        burn = new Array();
+        burn = [];
         shuffle(deck);
     }
     return card;
