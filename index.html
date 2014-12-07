@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-15">
-<title>Vieo Poker Sim</title>
+<title>Video Poker Sim</title>
 <script src="poker.js"></script>
 <script>
 // Simple function for pulling get var out of URL
@@ -208,16 +208,20 @@ if (session_count > 0){
 
   }
 
-  // Runs complete, spit out aggregate data
+  // All runs are now complete so aggregate the data
   Results.median_bankroll = Math.median(Results.all_final_bankrolls);
   Results.mean_bankroll = Math.mean(Results.all_final_bankrolls);
   Results.median_multiplier = Math.round((Results.median_bankroll/initial_bankroll)*100)/100;
   Results.mean_multiplier = Math.round((Results.mean_bankroll/initial_bankroll)*100)/100;
+  Results.total_hands_played = Results.all_hands_played.reduce(function(a, b) { return a + b; });
+
+  // Render the results
   document.getElementById("final_output").innerHTML += "<h3>"
-    + "Hands played per session... median: " + Math.median(Results.all_hands_played) + "; mean: " + Math.mean(Results.all_hands_played) + "<br>"
-    + "Final bankrolls per session... median: " + Results.median_bankroll + " (" + Results.median_multiplier + "x); mean: " + Results.mean_bankroll + " (" + Results.mean_multiplier + "x)<br>"
-    + "Sessions Won: " + (Math.round(1000000*(Results.wins/session_count))/10000) + "%<br>"
-    + "Sessions Lost: " + (Math.round(1000000*(Results.losses/session_count))/10000) + "% <small><i>includes break-even</i></small><br>"
+    + "Hands played per session: " + Math.median(Results.all_hands_played) + " <i>median</i>; <small>" + Math.mean(Results.all_hands_played) + " <i>mean</i></small><br>"
+    + "Final bankrolls per session: " + Results.median_bankroll + " (" + Results.median_multiplier + "x) <i>median</i>; <small>" + Results.mean_bankroll + " (" + Results.mean_multiplier + "x) <i>mean</i></small><br>"
+    + "Session win rate: " + (Math.round(1000000*(Results.wins/session_count))/10000) + "% <small>(lost or broke even: " + (Math.round(1000000*(Results.losses/session_count))/10000) + "%)</small><br>"
+    + "<br>"
+    + "Total hands played: " + Results.total_hands_played + "<br>"
     + "Final Net Bankroll: " + Results.net_bankroll + "<br>";
     + "</h3>";
 
