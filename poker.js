@@ -8,6 +8,8 @@
 
 *************************************************************************/
 
+"use strict";
+
 // Augment the built-in Array object to use Math.max and Math.min
 Array.prototype.max = function() {
   return Math.max.apply(null, this);
